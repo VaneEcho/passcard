@@ -62,7 +62,7 @@ button:disabled { opacity:.4; cursor:not-allowed; }
  <section class="workspace">
   <div class="controls">
     <label for="seedInput">Seed</label>
-    <textarea id="seedInput" rows="2" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="status">BlueFox-1978</textarea>
+    <textarea id="seedInput" rows="2" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="status"></textarea>
     <button id="shuffleBtn" type="button">换个示例</button>
    <label for="styleSelect">配色</label>
    <select id="styleSelect"><option value="warm">暖白</option><option value="ink">蓝灰</option><option value="night">深色</option><option value="bw" selected>黑白</option></select>
@@ -137,7 +137,7 @@ function cardSvg(value,style) {
   });
  });
  const chars=[...seed], lines=chars.length>16 ? [chars.slice(0,16).join(""),chars.slice(16).join("")] : [seed];
- const caption=lines.map((line,i)=>`<text x="458" y="${lines.length===1?459:447+i*25}" text-anchor="middle" font-size="${lines.length===1?22:20}"${[...line].length>12?' textLength="320" lengthAdjust="spacingAndGlyphs"':""}>${esc(line)}</text>`).join("");
+ const caption=lines.map((line,i)=>`<text x="458" y="${lines.length===1?457:445+i*24}" text-anchor="middle" font-size="20">${esc(line)}</text>`).join("");
  let crop="";
  for(const x of [30,886]) for(const y of [30,569.8]) {
   const dx=x===30?-1:1,dy=y===30?-1:1;
@@ -150,7 +150,7 @@ function cardSvg(value,style) {
    <text x="76" y="99" fill="${ink}" font-family="Arial, sans-serif" font-size="27" font-weight="700">PASSCARD</text>
   ${keys}
   <rect x="273" y="418" width="370" height="64" rx="14" fill="${space}" stroke="${ink}" stroke-width="1.5"/>
-  <g fill="${spaceInk}" font-family="PingFang SC, Microsoft YaHei, sans-serif">${caption}</g>
+  <g fill="${spaceInk}" font-family="Menlo, Consolas, monospace">${caption}</g>
   <g fill="none" stroke="#333333" stroke-width="1">${crop}</g>
  </svg>`;
 }
@@ -231,11 +231,12 @@ async function exportCard(format) {
  finally { exporting=false;updateButtons(); }
 }
 seedInput.addEventListener("input",render);styleSelect.addEventListener("change",render);
-get("shuffleBtn").addEventListener("click",()=>{
+function randomizeSeed() {
  const left=["blue","quiet","atlas","silver","night","amber","signal","cedar"],right=["fox","dock","lamp","card","harbor","window","pixel","brush"];
  const pick=items=>items[Math.floor(Math.random()*items.length)];
  seedInput.value=`${pick(left)}-${pick(right)}-${100+Math.floor(Math.random()*9900)}`;render();
-});
+}
+get("shuffleBtn").addEventListener("click",randomizeSeed);
 get("exportSvgBtn").addEventListener("click",()=>exportCard("svg"));
 get("exportPngBtn").addEventListener("click",()=>exportCard("png"));
 get("printBtn").addEventListener("click",()=>{
@@ -244,7 +245,7 @@ get("printBtn").addEventListener("click",()=>{
 });
 window.addEventListener("beforeprint",()=>{if(!ready()) render();updateButtons();});
 window.addEventListener("pageshow",render);
-render();
+randomizeSeed();
 </script>
 </body>
 </html>
