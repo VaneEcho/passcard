@@ -4,18 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
-<title>Passcard · 密码卡片</title>
+<title>Passcard</title>
 <style>
 :root { color-scheme: light; --paper:#f7f8fa; --ink:#242b33; --muted:#64707d; --line:#d9dfe5; --accent:#32649b; }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--paper); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
 main { max-width:1050px; margin:auto; padding:32px 32px 24px; }
 header { display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:18px; }
-.brand { font-size:23px; font-weight:700; letter-spacing:-.5px; }
-.edition { font-size:13px; color:var(--muted); }
+.brand { margin:0; font-size:23px; font-weight:700; letter-spacing:-.5px; }
 .workspace { display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; align-items:start; padding:32px 0 24px; }
-h1 { font-size:21px; font-weight:600; margin:0 0 12px; }
-.lead { font-size:14px; color:var(--muted); margin:0 0 32px; line-height:1.8; }
 label { display:block; font-size:13px; margin-bottom:9px; }
 textarea,select,button { font:inherit; font-size:14px; color:inherit; }
 textarea,select { width:100%; border:1px solid var(--line); border-radius:6px; background:#fff; padding:12px; }
@@ -29,7 +26,7 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .preview { min-width:0; }
 .card-stage { padding:16px; background:#e9edf1; border-radius:6px; }
 #walletCard { aspect-ratio:916 / 599.8; display:grid; place-items:center; }
-#walletCard:empty::after { content:"输入暗号后生成卡片"; color:var(--muted); font-size:14px; }
+#walletCard:empty::after { content:"请输入 Seed"; color:var(--muted); font-size:14px; }
 #walletCard svg { display:block; width:100%; height:auto; }
 .caption { display:flex; justify-content:space-between; gap:12px; margin:14px 0 25px; font-size:12px; color:var(--muted); }
 .actions { display:flex; gap:8px; }
@@ -39,13 +36,10 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .note { color:var(--muted); font-size:12px; line-height:1.8; margin:12px 0 0; }
 #status { min-height:36px; font-size:13px; line-height:1.6; margin:16px 0 0; overflow-wrap:anywhere; }
 #status[data-error="true"] { color:#a13f2d; }
-.how { border-top:1px solid var(--line); padding:24px 0; font-size:13px; line-height:1.9; color:var(--muted); }
-.how strong { color:var(--ink); font-weight:500; margin-right:16px; }
-footer { font-size:12px; color:var(--muted); padding-bottom:20px; }
 #printBlocked { display:none; }
 @media (max-width:720px) {
  main { padding:24px 20px 12px; } .workspace { grid-template-columns:1fr; gap:24px; padding:32px 0 24px; }
- .lead { margin-bottom:22px; } .card-stage { padding:7px; } .edition { letter-spacing:0; }
+ .card-stage { padding:7px; }
  textarea,select { font-size:16px; } #shuffleBtn { margin-bottom:20px; } .caption { font-size:11px; }
  .actions button { padding:10px 8px; font-size:13px; white-space:nowrap; }
 }
@@ -53,7 +47,7 @@ footer { font-size:12px; color:var(--muted); padding-bottom:20px; }
 @media print {
  html,body { margin:0; padding:0; background:white; min-height:0; }
  main,.workspace,.preview,.card-stage,#walletCard { display:block; width:91.60mm; height:59.98mm; margin:0; padding:0; border:0; border-radius:0; background:none; }
- header,.controls,.caption,.actions,.note,#status,.how,footer { display:none; }
+ header,.controls,.caption,.actions,.note,#status { display:none; }
  #walletCard svg { width:91.60mm!important; height:59.98mm!important; max-width:none; filter:none; }
  .card-stage { break-inside:avoid; }
  * { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
@@ -64,14 +58,12 @@ footer { font-size:12px; color:var(--muted); padding-bottom:20px; }
 </head>
 <body>
 <main>
- <header><span class="brand">Passcard</span><span class="edition">密码卡片生成器</span></header>
+ <header><h1 class="brand">Passcard</h1></header>
  <section class="workspace">
   <div class="controls">
-   <h1>生成卡片</h1>
-   <p class="lead">同一句暗号，同一张卡片。</p>
-   <label for="seedInput">暗号</label>
-   <textarea id="seedInput" rows="2" autocomplete="off" spellcheck="false" aria-describedby="status">月亮邮局</textarea>
-   <button id="shuffleBtn" type="button">换一个暗号</button>
+    <label for="seedInput">Seed</label>
+    <textarea id="seedInput" rows="2" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="status">BlueFox-1978</textarea>
+    <button id="shuffleBtn" type="button">换个示例</button>
    <label for="styleSelect">配色</label>
    <select id="styleSelect"><option value="warm">暖白</option><option value="ink">蓝灰</option><option value="night">深色</option><option value="bw" selected>黑白</option></select>
   </div>
@@ -83,10 +75,8 @@ footer { font-size:12px; color:var(--muted); padding-bottom:20px; }
    <p id="status" role="status" aria-live="polite"></p>
   </div>
  </section>
-  <div class="how"><strong>使用方法</strong>将键帽左上的字母换成右下的字符。拿着同一张卡，就能反向还原。</div>
- <footer>字母替换的小玩具，不用于重要秘密</footer>
 </main>
-<p id="printBlocked">请输入有效暗号，再打印卡片。</p>
+<p id="printBlocked">请输入有效 Seed，再打印卡片。</p>
  <noscript>请在浏览器中启用 JavaScript，才能生成卡片。</noscript>
 <script>
 "use strict";
@@ -100,10 +90,10 @@ const THEMES = {
  bw:["#ffffff","#191919","#ffffff","#191919","#ffffff"]
 };
 function validateSeed(value) {
- if (typeof value !== "string" || !value.trim()) throw new Error("写一句暗号吧，空白还不能生成卡片。");
- if (/[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{M}\p{Default_Ignorable_Code_Point}\u2028\u2029\u2800]/u.test(value)) throw new Error("暗号里有隐藏字符或组合字符，请换成普通文字、数字或标点。");
+ if (typeof value !== "string" || !value.trim()) throw new Error("请输入 Seed。");
+ if (/[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{M}\p{Default_Ignorable_Code_Point}\u2028\u2029\u2800]/u.test(value)) throw new Error("Seed 含不支持的字符。");
  const seed = value.trim();
- if ([...seed].length > 32) throw new Error("暗号最多 32 个字符，才能完整放进空格键；请缩短后再试，输入没有被截断。");
+ if ([...seed].length > 32) throw new Error("Seed 最多 32 个字符。");
  return seed;
 }
 function cyrb128(str) {
@@ -154,11 +144,10 @@ function cardSvg(value,style) {
   crop+=`<path d="M${x},${y+dy*5}v${dy*15} M${x+dx*5},${y}h${dx*15}"/>`;
  }
  return `<svg xmlns="http://www.w3.org/2000/svg" width="91.60mm" height="59.98mm" viewBox="0 0 916 599.8" role="img" aria-labelledby="card-title">
-  <title id="card-title">字母替换卡 · ${esc(seed)}</title>
+  <title id="card-title">Passcard · ${esc(seed)}</title>
   <rect width="916" height="599.8" fill="${paper}"/>
   <rect x="30" y="30" width="856" height="539.8" rx="30" fill="none" stroke="${ink}" stroke-width="1.5"/>
-   <g fill="${ink}"><text x="76" y="99" font-family="Arial, sans-serif" font-size="27" font-weight="700">PASSCARD</text>
-   <text x="840" y="97" text-anchor="end" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16">字母替换卡</text></g>
+   <text x="76" y="99" fill="${ink}" font-family="Arial, sans-serif" font-size="27" font-weight="700">PASSCARD</text>
   ${keys}
   <rect x="273" y="418" width="370" height="64" rx="14" fill="${space}" stroke="${ink}" stroke-width="1.5"/>
   <g fill="${spaceInk}" font-family="PingFang SC, Microsoft YaHei, sans-serif">${caption}</g>
@@ -233,7 +222,7 @@ async function exportCard(format) {
  const snapshot=rendered;exporting=true;updateButtons();message(`正在准备 ${format.toUpperCase()}…`);
  try {
   const blob=format==="png"?await pngBlob(snapshot.svg):new Blob([snapshot.svg],{type:"image/svg+xml;charset=utf-8"});
-  if(snapshot!==rendered||!ready()) throw new Error("暗号或配色已变化，请重新导出当前卡片。");
+  if(snapshot!==rendered||!ready()) throw new Error("Seed 或配色已变化，请重新导出。");
   const url=URL.createObjectURL(blob),link=document.createElement("a");
   try { link.href=url;link.download=`passcard.${format}`;document.body.appendChild(link);link.click(); }
   finally { link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000); }
@@ -243,9 +232,9 @@ async function exportCard(format) {
 }
 seedInput.addEventListener("input",render);styleSelect.addEventListener("change",render);
 get("shuffleBtn").addEventListener("click",()=>{
- const left=["月亮","雨夜","松林","海风","黄昏","星星","白鲸","春日"],right=["邮局","来信","电台","车站","唱片","灯塔","花园","茶馆"];
- const options=left.flatMap(a=>right.map(b=>a+b)).filter(s=>s!==seedInput.value.trim());
- seedInput.value=options[Math.floor(Math.random()*options.length)];render();
+ const left=["blue","quiet","atlas","silver","night","amber","signal","cedar"],right=["fox","dock","lamp","card","harbor","window","pixel","brush"];
+ const pick=items=>items[Math.floor(Math.random()*items.length)];
+ seedInput.value=`${pick(left)}-${pick(right)}-${100+Math.floor(Math.random()*9900)}`;render();
 });
 get("exportSvgBtn").addEventListener("click",()=>exportCard("svg"));
 get("exportPngBtn").addEventListener("click",()=>exportCard("png"));
