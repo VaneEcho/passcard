@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Passcard · 密码卡片</title>
+<style>
+:root { color-scheme: light; --paper:#f7f8fa; --ink:#242b33; --muted:#64707d; --line:#d9dfe5; --accent:#32649b; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--paper); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+main { max-width:1050px; margin:auto; padding:32px 32px 24px; }
+header { display:flex; align-items:baseline; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:18px; }
+.brand { font-size:23px; font-weight:700; letter-spacing:-.5px; }
+.edition { font-size:13px; color:var(--muted); }
+.workspace { display:grid; grid-template-columns:260px minmax(0,1fr); gap:40px; align-items:start; padding:32px 0 24px; }
+h1 { font-size:21px; font-weight:600; margin:0 0 12px; }
+.lead { font-size:14px; color:var(--muted); margin:0 0 32px; line-height:1.8; }
+label { display:block; font-size:13px; margin-bottom:9px; }
+textarea,select,button { font:inherit; font-size:14px; color:inherit; }
+textarea,select { width:100%; border:1px solid var(--line); border-radius:6px; background:#fff; padding:12px; }
+textarea { min-height:80px; resize:vertical; line-height:1.6; overflow-wrap:anywhere; }
+select { min-height:46px; }
+button { cursor:pointer; border:1px solid var(--line); border-radius:4px; background:transparent; min-height:44px; padding:10px 14px; }
+button:hover:not(:disabled) { background:#e9eef4; }
+button:disabled { opacity:.4; cursor:not-allowed; }
+:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+#shuffleBtn { width:100%; margin:10px 0 26px; }
+.preview { min-width:0; }
+.card-stage { padding:16px; background:#e9edf1; border-radius:6px; }
+#walletCard { aspect-ratio:916 / 599.8; display:grid; place-items:center; }
+#walletCard:empty::after { content:"输入暗号后生成卡片"; color:var(--muted); font-size:14px; }
+#walletCard svg { display:block; width:100%; height:auto; }
+.caption { display:flex; justify-content:space-between; gap:12px; margin:14px 0 25px; font-size:12px; color:var(--muted); }
+.actions { display:flex; gap:8px; }
+.actions button { flex:1; }
+.actions #printBtn { background:var(--accent); color:#fff; border-color:var(--accent); }
+.actions #printBtn:hover:not(:disabled) { background:#27517f; }
+.note { color:var(--muted); font-size:12px; line-height:1.8; margin:12px 0 0; }
+#status { min-height:36px; font-size:13px; line-height:1.6; margin:16px 0 0; overflow-wrap:anywhere; }
+#status[data-error="true"] { color:#a13f2d; }
+.how { border-top:1px solid var(--line); padding:24px 0; font-size:13px; line-height:1.9; color:var(--muted); }
+.how strong { color:var(--ink); font-weight:500; margin-right:16px; }
+footer { font-size:12px; color:var(--muted); padding-bottom:20px; }
+#printBlocked { display:none; }
+@media (max-width:720px) {
+ main { padding:24px 20px 12px; } .workspace { grid-template-columns:1fr; gap:24px; padding:32px 0 24px; }
+ .lead { margin-bottom:22px; } .card-stage { padding:7px; } .edition { letter-spacing:0; }
+ textarea,select { font-size:16px; } #shuffleBtn { margin-bottom:20px; } .caption { font-size:11px; }
+ .actions button { padding:10px 8px; font-size:13px; white-space:nowrap; }
+}
+@page { size:A4 portrait; margin:10mm; }
+@media print {
+ html,body { margin:0; padding:0; background:white; min-height:0; }
+ main,.workspace,.preview,.card-stage,#walletCard { display:block; width:91.60mm; height:59.98mm; margin:0; padding:0; border:0; border-radius:0; background:none; }
+ header,.controls,.caption,.actions,.note,#status,.how,footer { display:none; }
+ #walletCard svg { width:91.60mm!important; height:59.98mm!important; max-width:none; filter:none; }
+ .card-stage { break-inside:avoid; }
+ * { print-color-adjust:exact; -webkit-print-color-adjust:exact; }
+ body:not([data-print-ready="true"]) main { display:none; }
+ body:not([data-print-ready="true"]) #printBlocked { display:block; }
+}
+</style>
+</head>
+<body>
+<main>
+ <header><span class="brand">Passcard</span><span class="edition">密码卡片生成器</span></header>
+ <section class="workspace">
+  <div class="controls">
+   <h1>生成卡片</h1>
+   <p class="lead">同一句暗号，同一张卡片。</p>
+   <label for="seedInput">暗号</label>
+   <textarea id="seedInput" rows="2" autocomplete="off" spellcheck="false" aria-describedby="status">月亮邮局</textarea>
+   <button id="shuffleBtn" type="button">换一个暗号</button>
+   <label for="styleSelect">配色</label>
+   <select id="styleSelect"><option value="warm">暖白</option><option value="ink">蓝灰</option><option value="night">深色</option><option value="bw" selected>黑白</option></select>
+  </div>
+  <div class="preview">
+   <div class="card-stage"><div id="walletCard"></div></div>
+   <div class="caption"><span>标准信用卡尺寸</span><span>85.60 × 53.98 mm</span></div>
+   <div class="actions"><button id="exportSvgBtn" disabled>导出 SVG</button><button id="exportPngBtn" disabled>导出 PNG</button><button id="printBtn" disabled>打印卡片</button></div>
+   <p class="note">打印选 100% / 实际大小，关闭页眉页脚，沿裁切标记裁好。</p>
+   <p id="status" role="status" aria-live="polite"></p>
+  </div>
+ </section>
+  <div class="how"><strong>使用方法</strong>将键帽左上的字母换成右下的字符。拿着同一张卡，就能反向还原。</div>
+ <footer>字母替换的小玩具，不用于重要秘密</footer>
+</main>
+<p id="printBlocked">请输入有效暗号，再打印卡片。</p>
+ <noscript>请在浏览器中启用 JavaScript，才能生成卡片。</noscript>
+<script>
+"use strict";
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const CHARSET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz!@#$%&*+=?";
+const SIZE = { width:91.60, height:59.98, trimWidth:85.60, trimHeight:53.98, bleed:3, dpi:600, pixelsWide:2164, pixelsHigh:1417 };
+const THEMES = {
+ warm:["#fbf6ee","#30392f","#f8f1e2","#e8deca","#30392f"],
+ ink:["#f2f6f7","#244355","#edf3f5","#cedde3","#244355"],
+ night:["#202b30","#ede8da","#202b30","#b9c7b5","#202b30"],
+ bw:["#ffffff","#191919","#ffffff","#191919","#ffffff"]
+};
+function validateSeed(value) {
+ if (typeof value !== "string" || !value.trim()) throw new Error("写一句暗号吧，空白还不能生成卡片。");
+ if (/[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Cn}\p{M}\p{Default_Ignorable_Code_Point}\u2028\u2029\u2800]/u.test(value)) throw new Error("暗号里有隐藏字符或组合字符，请换成普通文字、数字或标点。");
+ const seed = value.trim();
+ if ([...seed].length > 32) throw new Error("暗号最多 32 个字符，才能完整放进空格键；请缩短后再试，输入没有被截断。");
+ return seed;
+}
+function cyrb128(str) {
+ let h1=1779033703,h2=3144134277,h3=1013904242,h4=2773480762;
+ for(let i=0,k;i<str.length;i++) {
+  k=str.charCodeAt(i); h1=h2^Math.imul(h1^k,597399067); h2=h3^Math.imul(h2^k,2869860233);
+  h3=h4^Math.imul(h3^k,951274213); h4=h1^Math.imul(h4^k,2716044179);
+ }
+ h1=Math.imul(h3^(h1>>>18),597399067); h2=Math.imul(h4^(h2>>>22),2869860233);
+ h3=Math.imul(h1^(h3>>>17),951274213); h4=Math.imul(h2^(h4>>>19),2716044179);
+ return [(h1^h2^h3^h4)>>>0,(h2^h1)>>>0,(h3^h1)>>>0,(h4^h1)>>>0];
+}
+function sfc32(a,b,c,d) {
+ return function() {
+  a>>>=0;b>>>=0;c>>>=0;d>>>=0;
+  let t=(a+b)|0; a=b^b>>>9; b=c+(c<<3)|0; c=c<<21|c>>>11;
+  d=d+1|0;t=t+d|0;c=c+t|0;return (t>>>0)/4294967296;
+ };
+}
+function buildMapping(value) {
+ const rand=sfc32(...cyrb128(validateSeed(value))), chars=[...CHARSET];
+ for(let i=chars.length-1;i>0;i--) { const j=Math.floor(rand()*(i+1)); [chars[i],chars[j]]=[chars[j],chars[i]]; }
+ return Object.fromEntries([...LETTERS].map((letter,i)=>[letter,chars[i]]));
+}
+const esc = value => String(value).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[c]));
+function cardSvg(value,style) {
+ const seed=validateSeed(value), mapping=buildMapping(seed);
+  if (!Object.hasOwn(THEMES,style)) throw new Error("请选择一种配色。");
+ const [paper,ink,key,space,spaceInk]=THEMES[style];
+ let keys="";
+ ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"].forEach((row,r)=>{
+  const start=30+(856-(row.length*68+(row.length-1)*11))/2;
+  [...row].forEach((letter,col)=>{
+   const x=start+col*79,y=145+r*91;
+   // Clip identifiers are fixed keyboard letters, never user input.
+   keys+=`<defs><clipPath id="key-${letter}"><rect x="${x+3.5}" y="${y+3.5}" width="61" height="71" rx="10"/></clipPath></defs>
+    <rect x="${x}" y="${y}" width="68" height="78" rx="13" fill="${ink}"/>
+    <g clip-path="url(#key-${letter})"><path d="M${x},${y+78} L${x+68},${y} V${y+78}Z" fill="${key}"/></g>
+    <text x="${x+11}" y="${y+32}" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="${key}">${letter}</text>
+    <text x="${x+56}" y="${y+65}" text-anchor="end" font-family="Menlo, Consolas, monospace" font-size="23" font-weight="700" fill="${ink}">${esc(mapping[letter])}</text>`;
+  });
+ });
+ const chars=[...seed], lines=chars.length>16 ? [chars.slice(0,16).join(""),chars.slice(16).join("")] : [seed];
+ const caption=lines.map((line,i)=>`<text x="458" y="${lines.length===1?459:447+i*25}" text-anchor="middle" font-size="${lines.length===1?22:20}"${[...line].length>12?' textLength="320" lengthAdjust="spacingAndGlyphs"':""}>${esc(line)}</text>`).join("");
+ let crop="";
+ for(const x of [30,886]) for(const y of [30,569.8]) {
+  const dx=x===30?-1:1,dy=y===30?-1:1;
+  crop+=`<path d="M${x},${y+dy*5}v${dy*15} M${x+dx*5},${y}h${dx*15}"/>`;
+ }
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="91.60mm" height="59.98mm" viewBox="0 0 916 599.8" role="img" aria-labelledby="card-title">
+  <title id="card-title">字母替换卡 · ${esc(seed)}</title>
+  <rect width="916" height="599.8" fill="${paper}"/>
+  <rect x="30" y="30" width="856" height="539.8" rx="30" fill="none" stroke="${ink}" stroke-width="1.5"/>
+   <g fill="${ink}"><text x="76" y="99" font-family="Arial, sans-serif" font-size="27" font-weight="700">PASSCARD</text>
+   <text x="840" y="97" text-anchor="end" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="16">字母替换卡</text></g>
+  ${keys}
+  <rect x="273" y="418" width="370" height="64" rx="14" fill="${space}" stroke="${ink}" stroke-width="1.5"/>
+  <g fill="${spaceInk}" font-family="PingFang SC, Microsoft YaHei, sans-serif">${caption}</g>
+  <g fill="none" stroke="#333333" stroke-width="1">${crop}</g>
+ </svg>`;
+}
+function crc32(bytes) {
+ let crc=0xffffffff;
+ for(const byte of bytes) { crc^=byte; for(let bit=0;bit<8;bit++) crc=(crc>>>1)^((crc&1)?0xedb88320:0); }
+ return (crc^0xffffffff)>>>0;
+}
+function withPngDpi(bytes) {
+ if (!(bytes instanceof Uint8Array) || ![137,80,78,71,13,10,26,10].every((n,i)=>bytes[i]===n)) throw new Error("PNG 数据无效，请重试。");
+ const phys=new Uint8Array(21), view=new DataView(phys.buffer);
+ view.setUint32(0,9);phys.set([112,72,89,115],4);
+ view.setUint32(8,Math.round(600/0.0254));view.setUint32(12,Math.round(600/0.0254));phys[16]=1;
+ view.setUint32(17,crc32(phys.subarray(4,17)));
+ const chunks=[bytes.subarray(0,8)],source=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+ let offset=8,inserted=false,ended=false;
+ while(offset<bytes.length) {
+  if(offset+12>bytes.length) throw new Error("PNG 数据不完整。");
+  const length=source.getUint32(offset),end=offset+length+12;
+  if(end>bytes.length) throw new Error("PNG 数据不完整。");
+  const type=String.fromCharCode(...bytes.subarray(offset+4,offset+8));
+  if(source.getUint32(end-4)!==crc32(bytes.subarray(offset+4,end-4))) throw new Error("PNG 校验失败。");
+  if(offset===8&&(type!=="IHDR"||length!==13)) throw new Error("PNG 缺少尺寸信息。");
+  if(type!=="pHYs") chunks.push(bytes.subarray(offset,end));
+  if(type==="IHDR"&&!inserted) { chunks.push(phys);inserted=true; }
+  offset=end;
+  if(type==="IEND") { ended=length===0&&end===bytes.length;break; }
+ }
+ if(!inserted||!ended) throw new Error("PNG 数据不完整。");
+ const result=new Uint8Array(chunks.reduce((n,c)=>n+c.length,0));let pos=0;
+ for(const chunk of chunks) { result.set(chunk,pos);pos+=chunk.length; } return result;
+}
+const get=id=>document.getElementById(id);
+const seedInput=get("seedInput"),styleSelect=get("styleSelect"),wallet=get("walletCard"),status=get("status");
+const buttons=[get("exportSvgBtn"),get("exportPngBtn"),get("printBtn")];
+let rendered=null,exporting=false;
+function message(text,error=false) { status.textContent=text;status.dataset.error=String(error); }
+function ready() { return rendered&&rendered.seed===seedInput.value&&rendered.style===styleSelect.value; }
+function updateButtons() { buttons.forEach(b=>b.disabled=!ready()||exporting);document.body.dataset.printReady=String(Boolean(ready())); }
+function render() {
+ rendered=null;wallet.replaceChildren();
+ try {
+  const svg=cardSvg(seedInput.value,styleSelect.value);wallet.innerHTML=svg;
+  rendered={seed:seedInput.value,style:styleSelect.value,svg};seedInput.setAttribute("aria-invalid","false");message("");
+ } catch(error) { seedInput.setAttribute("aria-invalid","true");message(error.message||"卡片没生成，请重试。",true); }
+ updateButtons();
+}
+async function pngBlob(svg) {
+ const url=URL.createObjectURL(new Blob([svg],{type:"image/svg+xml;charset=utf-8"}));
+ try {
+  const image=new Image();
+  await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>{image.src="";reject(new Error("图片载入超时，请试试导出 SVG。"));},15000);
+   image.onload=()=>{clearTimeout(timer);resolve();};image.onerror=()=>{clearTimeout(timer);reject(new Error("图片载入失败，请试试导出 SVG。"));};image.src=url;
+  });
+  const canvas=document.createElement("canvas");canvas.width=SIZE.pixelsWide;canvas.height=SIZE.pixelsHigh;
+  const context=canvas.getContext("2d");if(!context) throw new Error("无法绘制 PNG，请试试导出 SVG。");
+  context.drawImage(image,0,0,canvas.width,canvas.height);
+  const blob=await new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>reject(new Error("PNG 导出超时，请试试 SVG。")),15000);
+   try { canvas.toBlob(value=>{clearTimeout(timer);value?resolve(value):reject(new Error("PNG 导出失败，请试试 SVG。"));},"image/png"); }
+   catch(error) { clearTimeout(timer);reject(error); }
+  });
+  return new Blob([withPngDpi(new Uint8Array(await blob.arrayBuffer()))],{type:"image/png"});
+ } finally { URL.revokeObjectURL(url); }
+}
+async function exportCard(format) {
+ if(!ready()||exporting) return;
+ const snapshot=rendered;exporting=true;updateButtons();message(`正在准备 ${format.toUpperCase()}…`);
+ try {
+  const blob=format==="png"?await pngBlob(snapshot.svg):new Blob([snapshot.svg],{type:"image/svg+xml;charset=utf-8"});
+  if(snapshot!==rendered||!ready()) throw new Error("暗号或配色已变化，请重新导出当前卡片。");
+  const url=URL.createObjectURL(blob),link=document.createElement("a");
+  try { link.href=url;link.download=`passcard.${format}`;document.body.appendChild(link);link.click(); }
+  finally { link.remove();setTimeout(()=>URL.revokeObjectURL(url),10000); }
+  message("已发起下载，请在浏览器下载列表中查看。");
+ } catch(error) { message(error.message||"导出失败，请重试或换一种格式。",true); }
+ finally { exporting=false;updateButtons(); }
+}
+seedInput.addEventListener("input",render);styleSelect.addEventListener("change",render);
+get("shuffleBtn").addEventListener("click",()=>{
+ const left=["月亮","雨夜","松林","海风","黄昏","星星","白鲸","春日"],right=["邮局","来信","电台","车站","唱片","灯塔","花园","茶馆"];
+ const options=left.flatMap(a=>right.map(b=>a+b)).filter(s=>s!==seedInput.value.trim());
+ seedInput.value=options[Math.floor(Math.random()*options.length)];render();
+});
+get("exportSvgBtn").addEventListener("click",()=>exportCard("svg"));
+get("exportPngBtn").addEventListener("click",()=>exportCard("png"));
+get("printBtn").addEventListener("click",()=>{
+ if(!ready()) return;
+ try { window.print(); } catch { message("无法打开打印窗口，请导出 SVG 后打印。",true); }
+});
+window.addEventListener("beforeprint",()=>{if(!ready()) render();updateButtons();});
+window.addEventListener("pageshow",render);
+render();
+</script>
+</body>
+</html>
