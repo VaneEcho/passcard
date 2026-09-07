@@ -2,6 +2,8 @@
 
 一个单文件的字母替换卡片生成器。
 
+[在线打开](https://vaneecho.github.io/passcard/passcard.html)
+
 ![Passcard 界面](preview.png)
 
 下载 [passcard.html](https://github.com/VaneEcho/passcard/raw/refs/heads/main/passcard.html)，用浏览器打开。不用安装，也不用联网。
